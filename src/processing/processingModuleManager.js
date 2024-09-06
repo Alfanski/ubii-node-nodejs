@@ -350,7 +350,7 @@ class ProcessingModuleManager extends EventEmitter {
           record.topic = topicDestination;
           record.type = type;
           record.timestamp = Utils.generateTimestamp();
-          topicDataBuffer.publishRecordImmediately(record);
+          topicDataBuffer.publishRecordImmediately(record, processingModule.nodeId);
         });
 
         /*// lockstep mode
