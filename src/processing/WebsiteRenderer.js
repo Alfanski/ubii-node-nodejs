@@ -1,5 +1,4 @@
 const puppeteer = require('puppeteer');
-const { PNG } = require('pngjs');
 const fs = require("fs");
 const ProtobufLibrary = require('@tum-far/ubii-msg-formats/dist/js/protobuf');
 const UbiiImage2D = ProtobufLibrary.ubii.dataStructure.Image2D;
@@ -26,7 +25,7 @@ class WebsiteRenderer {
         try {
             // Launch a headless browser
             this.browser = await puppeteer.launch({
-                headless: false, // Runs in headless mode
+                headless: true, // Runs in headless mode
                 ignoreHTTPErrors: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox', '--ignore-certificate-errors'], // Additional security configurations
             });
@@ -66,7 +65,7 @@ class WebsiteRenderer {
         let counter = 0;
         let intervalPublishScreenshot = setInterval(async () => {
             const screenShotData = await this.getScreenshotAsRGB8();
-            this.ubiiNode.publishRecord({
+            this.ubiiNode.publishRecordImmediately({
                 topic: testTopic,
                 image2D: {
                     width: screenShotData.width,
@@ -82,7 +81,6 @@ class WebsiteRenderer {
         this.ubiiNode.subscribeRegex("sessionId\/mouseup", this.handleMouseUp.bind(this));
         this.ubiiNode.subscribeRegex("sessionId\/mousedown", this.handleMouseDown.bind(this));
         this.ubiiNode.subscribeRegex("touch_events", this.handleTouchEvents.bind(this));
-        //this.ubiiNode.subscribeTopic("sessionId/mouse_move", this.handleMouseMove.bind(this));
         this.ubiiNode.subscribeTopic("sessionId/speech_to_text", this.handleTextInput.bind(this));
     }
 
@@ -91,23 +89,13 @@ class WebsiteRenderer {
         try {
             // Capture screenshot as a buffer (PNG format)
             const pngBuffer = await this.page.screenshot({ type: 'png'});
-            //await this.page.screenshot({ path: "./screenshot.png" });
-
-            // Parse the PNG buffer to extract pixel data
-            // console.log("PNG BUffer", pngBuffer);
-            // const PNGOBJ = new PNG();
-            // const png = PNGOBJ.parse(pngBuffer);
-            // const { width, height, data } = png;
-            // const width = this.width;
-            // const height = this.height;
 
             // Convert the screenshot buffer to RGB8 format
             const { data, info } = await sharp(pngBuffer).raw()
                 .toBuffer({ resolveWithObject: true });
             const width = info.width;
             const height = info.height;
-            //var buffer = PNG.sync.write(png);
-            //fs.writeFileSync('out.png', buffer);
+
 
             // Return the raw RGB data (in the format: [R, G, B, R, G, B, ...])
             return { data, width, height };
