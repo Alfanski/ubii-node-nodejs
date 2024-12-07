@@ -1,4 +1,4 @@
-const zmq = require('zeromq');
+const zmq = require('zeromq/v5-compat');
 
 const { PING_MESSAGE, PONG_MESSAGE } = require('./constants');
 

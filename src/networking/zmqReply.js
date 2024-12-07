@@ -1,4 +1,4 @@
-const zmq = require('zeromq');
+const zmq = require('zeromq/v5-compat');
 const namida = require('@tum-far/namida/src/namida');
 
 class ZmqReply {
