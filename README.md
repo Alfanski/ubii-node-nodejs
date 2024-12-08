@@ -1,4 +1,4 @@
-## Meeting Hub Frontend
+## Meeting Hub Backend for Rendering Websites and Interacting with them
 
 ## Table of Contents
 
