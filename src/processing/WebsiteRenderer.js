@@ -15,8 +15,9 @@ class WebsiteRenderer {
     }
 
     async init(url) {
-        this.width = 1920;
-        this.height = 1080;
+        this.mouseDown = false;
+        this.width = 1080;
+        this.height = 720;
         if (!url) {
             throw new Error('A URL must be provided as a parameter.');
         }
@@ -62,8 +63,7 @@ class WebsiteRenderer {
     initUbiiSubscriptions() {
         const testTopic = "sessionId" + '/test-topic/imagedata';
 
-        let counter = 0;
-        let intervalPublishScreenshot = setInterval(async () => {
+        setInterval(async () => {
             const screenShotData = await this.getScreenshotAsRGB8();
             this.ubiiNode.publishRecordImmediately({
                 topic: testTopic,
@@ -74,7 +74,7 @@ class WebsiteRenderer {
                     dataFormat: UbiiImage2D.DataFormat.RGB8
                 }
             })
-        }, 1000);
+        }, 500);
 
 
         this.ubiiNode.subscribeRegex("sessionId\/mousemove", this.handleMouseMove.bind(this));
@@ -88,7 +88,7 @@ class WebsiteRenderer {
         //console.log("capturing");
         try {
             // Capture screenshot as a buffer (PNG format)
-            const pngBuffer = await this.page.screenshot({ type: 'png'});
+            const pngBuffer = await this.page.screenshot({ type: 'png' });
 
             // Convert the screenshot buffer to RGB8 format
             const { data, info } = await sharp(pngBuffer).raw()
@@ -100,7 +100,7 @@ class WebsiteRenderer {
             // Return the raw RGB data (in the format: [R, G, B, R, G, B, ...])
             return { data, width, height };
         } catch (error) {
-            //await this.browser.close();
+            await this.browser.close();
             throw error;
         }
     }
@@ -111,6 +111,7 @@ class WebsiteRenderer {
         const x = event.vector2.x * this.width;
         const y = event.vector2.y * this.height;
         try {
+            console.log("mouse move", x, y);
             this.page.mouse.move(x, y);
         } catch (e) {
             console.log("Error", e);
@@ -120,8 +121,11 @@ class WebsiteRenderer {
     handleMouseUp(event) {
         const x = event.vector2.x * this.width;
         const y = event.vector2.y * this.height;
+        
         try {
-            this.page.mouse.up(x, y);
+            if(this.mouseDown){
+                this.page.mouse.up(x, y).catch(e => console.log(e));
+            }
         } catch (e) {
             console.log("Error", e);
         }
@@ -131,32 +135,31 @@ class WebsiteRenderer {
         const x = event.vector2.x * this.width;
         const y = event.vector2.y * this.height;
         try {
-            this.page.mouse.down(x, y);
+            if (!this.mouseDown) {
+                this.page.mouse.down(x, y).catch(e => console.log(e));
+            }
         } catch (e) {
             console.log("Error", e);
         }
     }
 
 
-    async handleTouchEvents(event) {
+    handleTouchEvents(event) {
         const touchEvents = event.touchEventList.elements
-        console.log("toucheventLits", event.touchEventList);
-        console.log("elements", event.touchEventList.elements);
-        if(touchEvents){
+        if (touchEvents) {
             for (const event of touchEvents) {
                 const x = event.position.x * this.width;
                 const y = event.position.y * this.height;
-                console.log("Event", event);
+                if(event.id > 0){
+                    continue;
+                }
                 try {
                     if (event.type === ProtobufLibrary.ubii.dataStructure.TouchEvent.TouchEventType.TOUCH_START) {
-                        console.log("mouse down", this.page.touchscreen.touchStart);
-                        await this.page.touchscreen.touchStart(x, y);
+                        this.page.touchscreen.touchStart(x, y).catch(e => console.log(e))
                     } else if (event.type === ProtobufLibrary.ubii.dataStructure.TouchEvent.TouchEventType.TOUCH_END) {
-                        console.log("mouse up");
-                        await this.page.touchscreen.touchEnd();
+                        this.page.touchscreen.touchEnd().catch(e => console.log(e));
                     } else if (event.type === ProtobufLibrary.ubii.dataStructure.TouchEvent.TouchEventType.TOUCH_MOVE) {
-                        console.log("mouse move");
-                        await this.page.touchscreen.touchMove(x, y);
+                        this.page.touchscreen.touchMove(x, y).catch(e => console.log(e));
                     }
                 } catch (e) {
                     console.log("Error", e);
